@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎄 Chém Quà Noel 🎁</title>
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle, #14532d, #052e16);
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+canvas {
+  display: block;
+  touch-action: none;
+}
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 20px;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+}
+#restartBtn {
+  position: fixed;
+  top: 60%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 28px;
+  font-size: 20px;
+  background: #facc15;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: none;
+  z-index: 20;
+}
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+  🎁 Chém: <span id="score">0</span>/36
+  ❌ Rơi: <span id="miss">0</span>/15
+</div>
+
+<button id="restartBtn">🔁 Chơi lại</button>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+// ẢNH
+const giftImg = new Image();
+giftImg.src = "gift.png";
+const santaImg = new Image();
+santaImg.src = "santa.png";
+
+// UI
+const scoreEl = document.getElementById("score");
+const missEl = document.getElementById("miss");
+const restartBtn = document.getElementById("restartBtn");
+
+// GAME STATE
+let items, score, miss, speed, gameOver, endText, timer;
+
+// RESET GAME
+function resetGame() {
+  items = [];
+  score = 0;
+  miss = 0;
+  speed = 4;
+  gameOver = false;
+  endText = "";
+  scoreEl.innerText = 0;
+  missEl.innerText = 0;
+  restartBtn.style.display = "none";
+
+  clearInterval(timer);
+  timer = setInterval(spawn, 650);
+  loop();
+}
+
+// SPAWN
+function spawn() {
+  if (gameOver) return;
+
+  items.push({
+    x: Math.random() * (canvas.width - 140),
+    y: -140,
+    size: 140,
+    bad: Math.random() < 0.25,
+    speed: speed
+  });
+
+  speed += 0.3;
+}
+
+// CHÉM
+canvas.addEventListener("pointerdown", e => {
+  if (gameOver) return;
+
+  const x = e.clientX;
+  const y = e.clientY;
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    if (
+      x >= it.x && x <= it.x + it.size &&
+      y >= it.y && y <= it.y + it.size
+    ) {
+      if (it.bad) {
+        endGame("💀 GAME OVER");
+        return;
+      } else {
+        score++;
+        scoreEl.innerText = score;
+        if (score >= 36) {
+          endGame("🎉 BẠN THẮNG 🎉");
+        }
+      }
+      items.splice(i, 1);
+      break;
+    }
+  }
+});
+
+// END GAME
+function endGame(text) {
+  gameOver = true;
+  endText = text;
+  clearInterval(timer);
+  restartBtn.style.display = "block";
+}
+
+// LOOP
+function loop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  items.forEach(it => {
+    it.y += it.speed;
+    const img = it.bad ? santaImg : giftImg;
+    ctx.drawImage(img, it.x, it.y, it.size, it.size);
+
+    if (it.y > canvas.height) {
+      if (!it.bad) {
+        miss++;
+        missEl.innerText = miss;
+        if (miss >= 15) {
+          endGame("❌ GAME OVER");
+        }
+      }
+      it.remove = true;
+    }
+  });
+
+  items = items.filter(it => !it.remove);
+
+  if (gameOver) {
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "#facc15";
+    ctx.font = "48px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(endText, canvas.width/2, canvas.height/2 - 40);
+    return;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// NÚT CHƠI LẠI
+restartBtn.onclick = resetGame;
+
+// START
+resetGame();
+</script>
+
+</body>
+</html>
